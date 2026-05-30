@@ -274,21 +274,11 @@ def _infer_clip_start(clip_path: Path) -> datetime:
 
     IST = UTC+5:30, so 20:07 IST = 14:37 UTC on 2026-04-10.
     """
-    # Try ffprobe for embedded creation_time
-    try:
-        import subprocess, json
-        result = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-print_format", "json",
-             "-show_format", str(clip_path)],
-            capture_output=True, text=True, timeout=10
-        )
-        if result.stdout:
-            data = json.loads(result.stdout)
-            ct = data.get("format", {}).get("tags", {}).get("creation_time", "")
-            if ct:
-                return datetime.fromisoformat(ct.replace("Z", "+00:00"))
-    except Exception:
-        pass
+    # NOTE: ffprobe creation_time is intentionally NOT used here.
+    # For the Purplle Brigade Road dataset the creation_time tag reflects the
+    # clip export date (2026-04-15), not the recording date (2026-04-10).
+    # The on-screen OSD timestamp is the authoritative source; the hardcoded
+    # fallback at the bottom of this function matches it exactly.
 
     # Try filename patterns
     name = clip_path.stem
