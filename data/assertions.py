@@ -135,7 +135,9 @@ check(
 )
 
 # ── 8. Staff events excluded from unique_visitors ──────────────────────────────
-staff_store = "STORE_STAFF_TEST"
+# Use a dedicated isolated store so staff test events don't pollute STORE_BLR_002.
+# The store name makes it clear this is a test-only store.
+staff_store = "STORE_ASSERT_STAFF_ONLY"
 staff_event = make_event(
     event_id=str(uuid.uuid4()), store_id=staff_store,
     visitor_id=f"VIS_{uuid.uuid4().hex[:6]}", is_staff=True,
