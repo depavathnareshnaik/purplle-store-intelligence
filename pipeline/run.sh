@@ -50,6 +50,10 @@ echo "  API: ${API_URL:-offline}"
 echo "  Clips: data/clips/"
 echo "  Output: data/events/"
 echo "============================================================"
+echo ""
+echo "  NOTE: Each run starts with a fresh JSONL file."
+echo "  Previous events are overwritten, not doubled."
+echo ""
 
 # ── Run detection ────────────────────────────────────────────────────────────
 STORE_FLAG=""

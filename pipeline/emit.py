@@ -37,6 +37,11 @@ class EventEmitter:
         config.events_dir.mkdir(parents=True, exist_ok=True)
         self.output_path = config.events_dir / f"{store_id}.jsonl"
 
+        # Always start fresh — truncate any existing JSONL from a previous run.
+        # Within a single run, multiple clips append correctly (all go through
+        # this same instance). But re-running the pipeline must not double the data.
+        self.output_path.write_text("")
+
         self._buffer: List[dict] = []
         self._total_emitted: int = 0
 
