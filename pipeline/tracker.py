@@ -55,6 +55,7 @@ class TrackState:
     # Billing
     in_billing: bool = False
     billing_entry_time: Optional[datetime] = None
+    had_billing_queue_join: bool = False  # True only if BILLING_QUEUE_JOIN was emitted
 
     # Session sequence counter (increments per event)
     session_seq: int = 0
@@ -429,6 +430,7 @@ class VisitorTracker:
                                              queue_depth=existing_depth,
                                              ts=ts)
                         )
+                        state.had_billing_queue_join = True
                     state.in_billing = True
                     state.billing_entry_time = ts
 
@@ -455,7 +457,13 @@ class VisitorTracker:
     def _record_billing_exit(
         self, state: TrackState, dwell_ms: int, ts: datetime
     ) -> None:
-        """Buffer a billing exit; resolved post-processing via resolve_abandons()."""
+        """
+        Buffer a billing exit; resolved post-processing via resolve_abandons().
+        Only records visitors who previously received a BILLING_QUEUE_JOIN event —
+        you cannot abandon a queue you never joined.
+        """
+        if not state.had_billing_queue_join:
+            return
         self.pending_billing_exits.append(BillingExit(
             visitor_id=state.visitor_id,
             camera_id=state.camera_id,
