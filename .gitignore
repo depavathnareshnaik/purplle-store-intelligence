@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Data — CCTV clips are large and licensed, never commit them
+data/clips/
+
+# Keep all other data files (store_layout, pos_transactions, sample_events, real events)
+# data/events/, data/*.json, data/*.csv, data/*.jsonl are committed
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+yolov9c.pt
+*.pt
+*.pth

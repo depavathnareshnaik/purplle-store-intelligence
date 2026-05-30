@@ -1,0 +1,93 @@
+{
+  "STORE_BLR_002": {
+    "name": "Purplle Brigade Road Bangalore",
+    "city": "Bangalore",
+    "store_id_pos": "ST1008",
+    "open_hours": { "start": "10:00", "end": "22:00" },
+    "cameras": [
+      {
+        "camera_id": "CAM_ENTRY_01",
+        "filename": "CAM_3.mp4",
+        "type": "entry_exit",
+        "fps": 30,
+        "resolution": [1920, 1080],
+        "entry_threshold_y_pct": 0.65,
+        "description": "Front entrance glass door — captures all customer entry/exit",
+        "covers_zones": []
+      },
+      {
+        "camera_id": "CAM_FLOOR_01",
+        "filename": "CAM_1.mp4",
+        "type": "main_floor",
+        "fps": 30,
+        "resolution": [1920, 1080],
+        "description": "Right-side product shelves — The Face Shop, Good Vibes, Dermdoc brands",
+        "covers_zones": ["SKINCARE", "BATH_BODY", "WELLNESS"]
+      },
+      {
+        "camera_id": "CAM_FLOOR_02",
+        "filename": "CAM_2.mp4",
+        "type": "main_floor",
+        "fps": 30,
+        "resolution": [1920, 1080],
+        "description": "Wide floor view — Lakme, FacesCanada, Maybelline makeup section",
+        "covers_zones": ["MAKEUP", "LIPS_EYES", "HAIR"]
+      },
+      {
+        "camera_id": "CAM_BILL_01",
+        "filename": "CAM_5.mp4",
+        "type": "billing",
+        "fps": 25,
+        "resolution": [1920, 1080],
+        "description": "Billing counter from above — cashier desk with laptop",
+        "covers_zones": ["BILLING"]
+      },
+      {
+        "camera_id": "CAM_BACK_01",
+        "filename": "CAM_4.mp4",
+        "type": "storage",
+        "fps": 25,
+        "resolution": [1920, 1080],
+        "description": "Back room / storage — non-customer area, excluded from analytics",
+        "covers_zones": []
+      }
+    ],
+    "zones": [
+      {
+        "zone_id": "SKINCARE",
+        "sku_zone": "SKINCARE",
+        "camera_id": "CAM_FLOOR_01",
+        "description": "Right wall shelves — The Face Shop, Good Vibes, Dermdoc, Round Lab",
+        "polygon": [[800, 50], [1920, 50], [1920, 700], [800, 700]]
+      },
+      {
+        "zone_id": "BATH_BODY",
+        "sku_zone": "BATH_BODY",
+        "camera_id": "CAM_FLOOR_01",
+        "description": "Left side of right-wall shelves — bath, body, wellness products",
+        "polygon": [[0, 50], [800, 50], [800, 700], [0, 700]]
+      },
+      {
+        "zone_id": "MAKEUP",
+        "sku_zone": "MAKEUP",
+        "camera_id": "CAM_FLOOR_02",
+        "description": "Main floor — Lakme, FacesCanada, Maybelline, NY Bae",
+        "polygon": [[640, 50], [1920, 50], [1920, 800], [640, 800]]
+      },
+      {
+        "zone_id": "HAIR",
+        "sku_zone": "HAIR",
+        "camera_id": "CAM_FLOOR_02",
+        "description": "Left wall shelves — haircare, styling products",
+        "polygon": [[0, 50], [640, 50], [640, 800], [0, 800]]
+      },
+      {
+        "zone_id": "BILLING",
+        "sku_zone": "BILLING",
+        "camera_id": "CAM_BILL_01",
+        "description": "Billing counter — cashier desk",
+        "polygon": [[0, 200], [900, 200], [900, 900], [0, 900]]
+      }
+    ]
+  }
+}

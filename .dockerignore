@@ -1,0 +1,35 @@
+# Version control
+.git
+.gitignore
+
+# Python runtime artefacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.venv
+venv
+
+# Local environment
+.env
+
+# Dataset — never goes into the image; mounted as a volume at runtime
+data/clips/
+data/events/
+data/*.csv
+data/*.json
+data/*.jsonl
+
+# Docs and planning — not needed at runtime
+docs/
+*.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Test artefacts
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Store Intelligence — Live Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f172a;
+      --surface:   #1e293b;
+      --border:    #334155;
+      --text:      #e2e8f0;
+      --muted:     #94a3b8;
+      --accent:    #6366f1;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --yellow:    #f59e0b;
+      --orange:    #f97316;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, "JetBrains Mono", "Cascadia Code", monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    .store-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      transition: background 0.3s;
+    }
+
+    .status-dot.live {
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Main layout ──────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── KPI tiles ────────────────────────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .kpi-card.visitors::before  { background: var(--accent); }
+    .kpi-card.conversion::before{ background: var(--green); }
+    .kpi-card.queue::before     { background: var(--yellow); }
+    .kpi-card.abandon::before   { background: var(--red); }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+
+    .kpi-value {
+      font-size: 2.8rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -2px;
+      transition: color 0.3s;
+    }
+
+    .kpi-value.updating {
+      color: var(--accent);
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ── Middle row: chart + funnel ───────────────────────────────────── */
+    .mid-row {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 220px;
+    }
+
+    /* ── Funnel ───────────────────────────────────────────────────────── */
+    .funnel-stages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .funnel-stage { display: flex; flex-direction: column; gap: 4px; }
+
+    .funnel-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+    }
+
+    .funnel-stage-name { color: var(--text); text-transform: capitalize; }
+    .funnel-count { color: var(--accent); font-weight: 700; }
+    .funnel-drop  { color: var(--muted); }
+
+    .funnel-bar-track {
+      height: 10px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .funnel-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.6s ease;
+    }
+
+    .stage-entry    .funnel-bar-fill { background: var(--accent); }
+    .stage-zone_visit .funnel-bar-fill { background: #818cf8; }
+    .stage-billing_queue .funnel-bar-fill { background: var(--yellow); }
+    .stage-purchase .funnel-bar-fill { background: var(--green); }
+
+    /* ── Bottom row: heatmap + anomalies ──────────────────────────────── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+    }
+
+    /* ── Zone heatmap ─────────────────────────────────────────────────── */
+    .zone-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .zone-cell {
+      border-radius: 8px;
+      padding: 12px 16px;
+      min-width: 110px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.4s ease;
+    }
+
+    .zone-name { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+    .zone-score { font-size: 1.6rem; font-weight: 700; }
+    .zone-visits { font-size: 0.7rem; color: var(--muted); }
+
+    /* ── Anomalies ────────────────────────────────────────────────────── */
+    .anomaly-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .anomaly-empty {
+      color: var(--green);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: rgba(34, 197, 94, 0.08);
+      border-radius: 8px;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .anomaly-item {
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 3px solid var(--yellow);
+      background: rgba(245, 158, 11, 0.06);
+      font-size: 0.78rem;
+    }
+
+    .anomaly-item.CRITICAL {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    .anomaly-item.WARN {
+      border-color: var(--yellow);
+      background: rgba(245, 158, 11, 0.06);
+    }
+
+    .anomaly-item.INFO {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .anomaly-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      font-size: 0.8rem;
+    }
+
+    .severity-badge {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .severity-badge.CRITICAL { background: var(--red);    color: #fff; }
+    .severity-badge.WARN     { background: var(--yellow); color: #000; }
+    .severity-badge.INFO     { background: var(--accent); color: #fff; }
+
+    .anomaly-action { color: var(--muted); line-height: 1.4; }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: var(--surface);
+    }
+
+    .footer-left { display: flex; gap: 24px; }
+
+    /* ── Responsive ────────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .mid-row, .bottom-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .kpi-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    Store Intelligence
+  </div>
+
+  <div class="store-selector">
+    <label for="store-select" style="font-size:0.8rem;color:var(--muted)">Store</label>
+    <select id="store-select">
+      <option value="STORE_BLR_002">STORE_BLR_002</option>
+      <option value="STORE_BLR_001">STORE_BLR_001</option>
+      <option value="STORE_DEL_001">STORE_DEL_001</option>
+      <option value="STORE_MUM_001">STORE_MUM_001</option>
+      <option value="STORE_HYD_001">STORE_HYD_001</option>
+    </select>
+  </div>
+
+  <div class="status-badge">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">Connecting…</span>
+  </div>
+</header>
+
+<!-- ── Main ──────────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- KPI tiles -->
+  <div class="kpi-row">
+    <div class="kpi-card visitors">
+      <div class="kpi-label">Visitors Today</div>
+      <div class="kpi-value" id="kpi-visitors">—</div>
+      <div class="kpi-sub" id="kpi-visitors-sub">waiting for data</div>
+    </div>
+    <div class="kpi-card conversion">
+      <div class="kpi-label">Conversion Rate</div>
+      <div class="kpi-value" id="kpi-conversion">—</div>
+      <div class="kpi-sub" id="kpi-conversion-sub">purchases ÷ visitors</div>
+    </div>
+    <div class="kpi-card queue">
+      <div class="kpi-label">Queue Depth</div>
+      <div class="kpi-value" id="kpi-queue">—</div>
+      <div class="kpi-sub" id="kpi-queue-sub">people in billing area</div>
+    </div>
+    <div class="kpi-card abandon">
+      <div class="kpi-label">Abandonment Rate</div>
+      <div class="kpi-value" id="kpi-abandon">—</div>
+      <div class="kpi-sub" id="kpi-abandon-sub">left billing without purchase</div>
+    </div>
+  </div>
+
+  <!-- Chart + Funnel -->
+  <div class="mid-row">
+    <div class="panel">
+      <div class="panel-title">Metrics Over Time (last 60s)</div>
+      <div class="chart-wrapper">
+        <canvas id="time-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Conversion Funnel</div>
+      <div class="funnel-stages" id="funnel-stages">
+        <div style="color:var(--muted);font-size:0.8rem">Waiting for events…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap + Anomalies -->
+  <div class="bottom-row">
+    <div class="panel">
+      <div class="panel-title">
+        Zone Heatmap
+        <span id="confidence-badge" style="margin-left:8px;font-size:0.65rem;padding:2px 6px;border-radius:4px;background:rgba(99,102,241,0.15);color:var(--accent)"></span>
+      </div>
+      <div class="zone-grid" id="zone-grid">
+        <div style="color:var(--muted);font-size:0.8rem">Waiting for zone events…</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Active Anomalies</div>
+      <div class="anomaly-list" id="anomaly-list">
+        <div class="anomaly-empty">✓ No anomalies detected</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Footer ────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-left">
+    <span>Last update: <span id="last-ts">—</span></span>
+    <span>Interval: 2s</span>
+    <span>Store Intelligence API v1.0</span>
+  </div>
+  <div>
+    Run <code>python pipeline/replay.py --speed 10</code> to feed live data
+  </div>
+</footer>
+
+<!-- ── JavaScript ─────────────────────────────────────────────────────────── -->
+<script>
+// ── Chart.js setup ─────────────────────────────────────────────────────────
+const MAX_POINTS = 30;  // 60 seconds at 2s interval
+const labels      = [];
+const visitData   = [];
+const convData    = [];
+
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+
+const chart = new Chart(document.getElementById('time-chart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Visitors',
+        data: visitData,
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 0,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Conversion %',
+        data: convData,
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34,197,94,0.05)',
+        tension: 0.4,
+        fill: false,
+        pointRadius: 0,
+        yAxisID: 'y2',
+        borderDash: [4, 2],
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } },
+    scales: {
+      x: { grid: { color: '#1e293b' }, ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+      y: {
+        type: 'linear', position: 'left',
+        title: { display: true, text: 'Visitors', font: { size: 10 } },
+        grid: { color: '#1e293b' },
+        ticks: { font: { size: 10 } },
+      },
+      y2: {
+        type: 'linear', position: 'right',
+        title: { display: true, text: 'Conv %', font: { size: 10 } },
+        grid: { drawOnChartArea: false },
+        ticks: { font: { size: 10 }, callback: v => v + '%' },
+        min: 0, max: 100,
+      },
+    },
+  },
+});
+
+// ── WebSocket connection ────────────────────────────────────────────────────
+let ws     = null;
+let storeId = document.getElementById('store-select').value;
+
+function connect(sid) {
+  storeId = sid;
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url   = `${proto}//${window.location.host}/ws/${sid}`;
+
+  setStatus(false, 'Connecting…');
+
+  if (ws) { ws.close(); }
+
+  ws = new WebSocket(url);
+
+  ws.onopen    = () => setStatus(true, 'LIVE');
+  ws.onmessage = e  => handleMessage(JSON.parse(e.data));
+  ws.onclose   = () => {
+    setStatus(false, 'Reconnecting…');
+    setTimeout(() => connect(storeId), 3000);
+  };
+  ws.onerror   = () => setStatus(false, 'Error');
+}
+
+document.getElementById('store-select').addEventListener('change', e => connect(e.target.value));
+
+// ── Data handlers ───────────────────────────────────────────────────────────
+function handleMessage(data) {
+  if (data.error) {
+    setStatus(false, 'Error: ' + data.error);
+    return;
+  }
+  document.getElementById('last-ts').textContent = data.ts + ' UTC';
+  updateKPIs(data.metrics);
+  updateChart(data.ts, data.metrics);
+  updateFunnel(data.funnel);
+  updateHeatmap(data.heatmap, data.data_confidence);
+  updateAnomalies(data.anomalies);
+}
+
+function updateKPIs(m) {
+  flash('kpi-visitors',   m.unique_visitors);
+  flash('kpi-conversion', m.conversion_rate_pct.toFixed(1) + '%');
+  flash('kpi-queue',      m.queue_depth);
+  flash('kpi-abandon',    m.abandonment_rate_pct.toFixed(1) + '%');
+
+  // Sub-labels
+  const queueSub = m.queue_depth > 5
+    ? '⚠ HIGH — consider opening another till'
+    : m.queue_depth > 2 ? 'Moderate queue' : 'Normal';
+  document.getElementById('kpi-queue-sub').textContent = queueSub;
+}
+
+function updateChart(ts, m) {
+  if (labels.length >= MAX_POINTS) {
+    labels.shift(); visitData.shift(); convData.shift();
+  }
+  labels.push(ts);
+  visitData.push(m.unique_visitors);
+  convData.push(m.conversion_rate_pct);
+  chart.update('none');   // 'none' mode = no animation for smoother streaming
+}
+
+function updateFunnel(stages) {
+  if (!stages || !stages.length) return;
+  const maxCount = stages[0].count || 1;
+  const container = document.getElementById('funnel-stages');
+  container.innerHTML = stages.map(s => `
+    <div class="funnel-stage stage-${s.stage}">
+      <div class="funnel-meta">
+        <span class="funnel-stage-name">${s.stage.replace('_', ' ')}</span>
+        <span>
+          <span class="funnel-count">${s.count}</span>
+          ${s.drop_off_pct > 0
+            ? `<span class="funnel-drop"> −${s.drop_off_pct.toFixed(1)}%</span>`
+            : ''}
+        </span>
+      </div>
+      <div class="funnel-bar-track">
+        <div class="funnel-bar-fill" style="width:${(s.count / maxCount * 100).toFixed(1)}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateHeatmap(zones, confidence) {
+  const badge = document.getElementById('confidence-badge');
+  if (confidence === 'low') {
+    badge.textContent = '⚠ low confidence (<20 sessions)';
+    badge.style.background = 'rgba(245,158,11,0.15)';
+    badge.style.color = '#f59e0b';
+  } else {
+    badge.textContent = '';
+  }
+
+  if (!zones || !zones.length) return;
+  const grid = document.getElementById('zone-grid');
+  grid.innerHTML = zones.map(z => {
+    // Colour intensity based on normalized score (0-100)
+    const alpha   = 0.15 + (z.score / 100) * 0.55;
+    const size    = 100 + Math.round(z.score / 100 * 30);
+    return `
+      <div class="zone-cell" style="background:rgba(99,102,241,${alpha.toFixed(2)});min-width:${size}px">
+        <div class="zone-name">${z.zone_id}</div>
+        <div class="zone-score">${Math.round(z.score)}</div>
+        <div class="zone-visits">${z.visit_count} visit${z.visit_count !== 1 ? 's' : ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateAnomalies(anomalies) {
+  const list = document.getElementById('anomaly-list');
+  if (!anomalies || !anomalies.length) {
+    list.innerHTML = '<div class="anomaly-empty">✓ No anomalies detected</div>';
+    return;
+  }
+  list.innerHTML = anomalies.map(a => `
+    <div class="anomaly-item ${a.severity}">
+      <div class="anomaly-header">
+        ${a.type}
+        <span class="severity-badge ${a.severity}">${a.severity}</span>
+      </div>
+      <div class="anomaly-action">${a.action}</div>
+    </div>
+  `).join('');
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function setStatus(live, text) {
+  document.getElementById('status-dot').className = 'status-dot' + (live ? ' live' : '');
+  document.getElementById('status-text').textContent = text;
+}
+
+function flash(id, value) {
+  const el = document.getElementById(id);
+  const str = String(value);
+  if (el.textContent === str) return;   // skip if unchanged
+  el.textContent = str;
+  el.classList.add('updating');
+  setTimeout(() => el.classList.remove('updating'), 400);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+connect(storeId);
+</script>
+</body>
+</html>

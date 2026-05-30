@@ -1,0 +1,17 @@
+[run]
+source = app
+omit =
+    # Pipeline code requires ultralytics/torchreid/opencv — not tested in unit suite
+    # Pipeline integration is tested via end-to-end detection runs
+    app/dashboard/index.html
+    */__pycache__/*
+
+[report]
+exclude_lines =
+    # Standard Python boilerplate exclusions
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    \.\.\.

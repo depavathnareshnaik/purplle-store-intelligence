@@ -1,0 +1,22 @@
+# Detection pipeline dependencies — heavier than the API, includes PyTorch + CV
+# Install separately: pip install -r requirements-pipeline.txt
+
+# Object detection + tracking
+ultralytics>=8.1.0          # YOLOv9 inference
+supervision>=0.19.0          # ByteTrack + detection utilities
+
+# Person Re-ID
+torchreid>=1.4.0             # OSNet appearance embeddings (optional — falls back to colour histogram)
+
+# Zone classification
+shapely>=2.0.0               # Polygon point-in-polygon
+
+# Computer vision
+opencv-python-headless>=4.9.0
+numpy>=1.24.0
+
+# API communication
+httpx>=0.27.0
+
+# Shared with API
+python-dotenv>=1.0.0
