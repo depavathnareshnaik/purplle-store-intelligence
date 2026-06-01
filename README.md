@@ -9,7 +9,7 @@
 
 ## Quick Start
 
-Five commands from a clean machine to a running API with live data:
+Five commands from a clean machine to a running API with real data:
 
 ```bash
 # 1. Clone
@@ -21,9 +21,8 @@ cp .env.example .env
 # 3. Start the API + database (migrations run automatically on boot)
 docker compose up --build -d
 
-# 4. Run the detection pipeline against the clips, then ingest events
-#    (clips must be in data/clips/<STORE_ID>/ — see Dataset Files below)
-./pipeline/run.sh && pip install httpx && python3 scripts/ingest_events.py
+# 4. Ingest pre-generated events (1,148 real detections already in the repo)
+pip install httpx && python3 scripts/ingest_events.py
 
 # 5. Verify the API and open the live dashboard
 curl -s http://localhost:8000/stores/STORE_BLR_002/metrics | python3 -m json.tool
@@ -32,8 +31,12 @@ curl -s http://localhost:8000/stores/STORE_BLR_002/metrics | python3 -m json.too
 > **Live dashboard:** `http://localhost:8000/dashboard`  
 > **Swagger docs:** `http://localhost:8000/docs`
 >
-> **Acceptance gate check:** `docker compose up` is the only manual step required after `git clone`.  
-> Alembic migrations run inside the container at boot — no `alembic upgrade head` needed.
+> **Note:** Step 4 ingests `data/events/STORE_BLR_002.jsonl` — the real detection
+> output from running the pipeline on the Purplle Brigade Road footage.
+> To re-run the detection pipeline yourself, see **Running the Detection Pipeline** below.
+>
+> **Acceptance gate:** `docker compose up` is the only manual step beyond `git clone`.  
+> Alembic migrations run automatically at boot.
 
 ---
 
