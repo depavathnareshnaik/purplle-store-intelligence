@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,7 +10,10 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    # PostgreSQL connection
+    # Direct DATABASE_URL — used by Railway/Render/Heroku (overrides individual params)
+    DATABASE_URL: Optional[str] = None
+
+    # Individual PostgreSQL params — used for local / docker-compose
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "store_intelligence"
@@ -22,7 +26,18 @@ class Settings(BaseSettings):
     DB_POOL_TIMEOUT: int = 30
 
     @property
-    def DATABASE_URL(self) -> str:
+    def database_url(self) -> str:
+        """
+        Returns the database URL.
+        Priority: DATABASE_URL env var (Railway/cloud) → individual POSTGRES_* params.
+        Handles Railway's postgres:// prefix (SQLAlchemy needs postgresql://).
+        """
+        if self.DATABASE_URL:
+            url = self.DATABASE_URL
+            # Railway / Heroku use postgres:// but SQLAlchemy requires postgresql://
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            return url
         return (
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
